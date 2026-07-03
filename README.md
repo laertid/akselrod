@@ -8,14 +8,22 @@ and strategies.
 
 ```
 src/pd/
-  rng.py              global reproducible RNG (set_seed / get_rng)
-  deal.py             Deal, Action, DealPayoff (8-number asymmetric matrix)
-  deal_generator.py   DealGenerator (abstract) + ClassicAxelrodGenerator
-  player.py           Player (abstract) + AlwaysCooperate
-  game.py             Game: turn-based tournament orchestrator
-tests/                pytest smoke tests (Python 3.12+)
-examples/             runnable examples
+  rng.py                 global reproducible RNG (set_seed / global_rng / create_rng)
+  deal.py                Deal, Action, DealPayoff (8-number asymmetric matrix)
+  deal_generator.py      DealGenerator (abstract base only)
+  deal_generators/       concrete DealGenerator implementations
+    classic_axelrod.py     ClassicAxelrodGenerator
+  player.py              Player (abstract base only)
+  players/               concrete Player implementations
+    always_cooperate.py    AlwaysCooperate
+  game.py                Game: turn-based tournament orchestrator
+tests/                   pytest smoke tests (Python 3.12+)
+examples/                runnable examples
 ```
+
+New strategies and deal generators go in their own module inside
+`pd/players/` or `pd/deal_generators/` and are re-exported from the
+package `__init__.py`.
 
 ## Design notes
 

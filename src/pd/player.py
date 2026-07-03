@@ -1,5 +1,8 @@
 """Players: the actors that decide how to act in each deal.
 
+This module defines the abstract `Player` base class. Concrete strategy
+implementations live in `pd.players.*`.
+
 A Player has:
   - a class-level `name()` static method identifying the strategy type;
   - a per-instance `player_id` assigned by the Game when the player is registered;
@@ -99,20 +102,3 @@ class Player(ABC):
         index, and `self.game` for global info like total rounds.
         """
         ...
-
-
-class AlwaysCooperate(Player):
-    """Trivial baseline: cooperate unconditionally."""
-
-    @staticmethod
-    def name() -> str:
-        return "AlwaysCooperate"
-
-    def do_deal(
-        self,
-        opponent: "Player",
-        payoff: DealPayoff,
-        self_is_player_1: bool,
-        round_index: int,
-    ) -> Action:
-        return Action.COOPERATE
