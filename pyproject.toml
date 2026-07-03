@@ -1,0 +1,16 @@
+[project]
+name = "pd"
+version = "0.1.0"
+description = "Reproducible iterated prisoner's dilemma tournaments."
+requires-python = ">=3.14"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
