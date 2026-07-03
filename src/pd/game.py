@@ -53,10 +53,11 @@ class Game:
         rng = global_rng()
 
         for round_index in range(self.total_rounds):
+            round_pairs = pairs[:]
+            
             # Shuffle pair order each round so no pair has a systematic
             # first/last-mover advantage across the tournament.
-            round_pairs = pairs[:]
-            rng.shuffle(round_pairs)
+            # rng.shuffle(round_pairs)
 
             for p1, p2 in round_pairs:
                 deal = self.deal_generator.generate(p1, p2, round_index)
