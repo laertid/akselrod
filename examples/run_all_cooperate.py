@@ -1,15 +1,17 @@
 """Minimal example: four AlwaysCooperate players run for 10 rounds."""
 
-from pd import AlwaysCooperate, ClassicAxelrodGenerator, Game, set_seed
+import random
+
+from pd import AlwaysCooperate, ClassicAxelrodGenerator, Game
 
 
 def main() -> None:
-    set_seed(42)
     players = [AlwaysCooperate() for _ in range(4)]
     game = Game(
         deal_generator=ClassicAxelrodGenerator(),
         players=players,
         total_rounds=10,
+        rng=random.Random(42),
     )
     game.play()
 

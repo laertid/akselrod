@@ -1,21 +1,23 @@
 """Tests for the TitForTat strategy."""
 
-import pytest
+import random
 
 from pd import (
     Action,
     AlwaysCooperate,
     AlwaysDefect,
     ClassicAxelrodGenerator,
-    DealPayoff,
     Game,
     Player,
     TitForTat,
-    set_seed,
 )
 
 
-# ---- helper strategies used only in tests -----------------------------------
+def _rng(seed: int = 0) -> random.Random:
+    return random.Random(seed)
+
+
+# ---- helper strategy used only in tests -------------------------------------
 
 
 class Scripted(Player):
@@ -40,41 +42,35 @@ class Scripted(Player):
 
 
 def test_first_move_is_cooperate():
-    set_seed(0)
     tft = TitForTat()
     coop = AlwaysCooperate()
-    game = Game(ClassicAxelrodGenerator(), [tft, coop], total_rounds=1)
+    game = Game(ClassicAxelrodGenerator(), [tft, coop], total_rounds=1, rng=_rng())
     game.play()
 
-    # Exactly one deal; TFT's action is COOPERATE regardless of role.
     (deal,) = game.history
     tft_action = deal.action_1 if deal.player_1 is tft else deal.action_2
     assert tft_action == Action.COOPERATE
 
 
 def test_mirrors_cooperator_forever():
-    set_seed(0)
     tft = TitForTat()
     coop = AlwaysCooperate()
-    game = Game(ClassicAxelrodGenerator(), [tft, coop], total_rounds=20)
+    game = Game(ClassicAxelrodGenerator(), [tft, coop], total_rounds=20, rng=_rng())
     game.play()
 
     for deal in game.history:
         tft_action = deal.action_1 if deal.player_1 is tft else deal.action_2
         assert tft_action == Action.COOPERATE
-    # Full C/C -> R=3 per round -> 60 total for each.
     assert tft.total_score() == 60
     assert coop.total_score() == 60
 
 
 def test_retaliates_against_defector_from_round_two():
-    set_seed(0)
     tft = TitForTat()
     ad = AlwaysDefect()
-    game = Game(ClassicAxelrodGenerator(), [tft, ad], total_rounds=5)
+    game = Game(ClassicAxelrodGenerator(), [tft, ad], total_rounds=5, rng=_rng())
     game.play()
 
-    # TFT plays C once (round 0), then D forever (rounds 1..4).
     tft_actions = [
         d.action_1 if d.player_1 is tft else d.action_2 for d in game.history
     ]
@@ -85,17 +81,12 @@ def test_retaliates_against_defector_from_round_two():
         Action.DEFECT,
         Action.DEFECT,
     ]
-    # Scores: (S=0) + 4*(P=1) = 4 for TFT; (T=5) + 4*(P=1) = 9 for AllD.
     assert tft.total_score() == 4
     assert ad.total_score() == 9
 
 
 def test_forgives_when_opponent_returns_to_cooperation():
-    """If the opponent defects once and then cooperates, TFT should punish
-    exactly once and then return to cooperation on the very next round."""
-    set_seed(0)
     tft = TitForTat()
-    # 5 rounds: C, D, C, C, C
     scripted = Scripted([
         Action.COOPERATE,
         Action.DEFECT,
@@ -103,31 +94,32 @@ def test_forgives_when_opponent_returns_to_cooperation():
         Action.COOPERATE,
         Action.COOPERATE,
     ])
-    game = Game(ClassicAxelrodGenerator(), [tft, scripted], total_rounds=5)
+    game = Game(
+        ClassicAxelrodGenerator(), [tft, scripted], total_rounds=5, rng=_rng()
+    )
     game.play()
 
     tft_actions = [
         d.action_1 if d.player_1 is tft else d.action_2 for d in game.history
     ]
     assert tft_actions == [
-        Action.COOPERATE,  # first move
-        Action.COOPERATE,  # mirrors opponent's round-0 C
-        Action.DEFECT,     # mirrors opponent's round-1 D (retaliation)
-        Action.COOPERATE,  # mirrors opponent's round-2 C (forgiven)
+        Action.COOPERATE,
+        Action.COOPERATE,
+        Action.DEFECT,
+        Action.COOPERATE,
         Action.COOPERATE,
     ]
 
 
 def test_pairwise_history_is_isolated_between_opponents():
-    """TFT should not carry grudges from opponent A into games with opponent B."""
-    set_seed(1)
     tft = TitForTat()
     ad = AlwaysDefect()
     coop = AlwaysCooperate()
-    game = Game(ClassicAxelrodGenerator(), [tft, ad, coop], total_rounds=10)
+    game = Game(
+        ClassicAxelrodGenerator(), [tft, ad, coop], total_rounds=10, rng=_rng(1)
+    )
     game.play()
 
-    # Against AllD: first C then all D.
     vs_ad = tft.history_with(ad)
     tft_actions_vs_ad = [
         d.action_1 if d.player_1 is tft else d.action_2 for d in vs_ad
@@ -135,7 +127,6 @@ def test_pairwise_history_is_isolated_between_opponents():
     assert tft_actions_vs_ad[0] == Action.COOPERATE
     assert all(a == Action.DEFECT for a in tft_actions_vs_ad[1:])
 
-    # Against AllC: always C, unaffected by the AllD grudge.
     vs_coop = tft.history_with(coop)
     tft_actions_vs_coop = [
         d.action_1 if d.player_1 is tft else d.action_2 for d in vs_coop
@@ -144,9 +135,8 @@ def test_pairwise_history_is_isolated_between_opponents():
 
 
 def test_tft_vs_tft_stays_in_mutual_cooperation():
-    set_seed(0)
     a, b = TitForTat(), TitForTat()
-    game = Game(ClassicAxelrodGenerator(), [a, b], total_rounds=50)
+    game = Game(ClassicAxelrodGenerator(), [a, b], total_rounds=50, rng=_rng())
     game.play()
 
     for deal in game.history:

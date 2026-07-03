@@ -5,6 +5,8 @@ with RandomDefectTft(p=0.05) breaks the cooperation cascade, and predictable
 defectors profit.
 """
 
+import random
+
 from pd import (
     AlwaysCooperate,
     AlwaysDefect,
@@ -13,25 +15,23 @@ from pd import (
     RandomDefect,
     RandomDefectTft,
     TitForTat,
-    create_rng,
-    set_seed,
 )
 
 
 def main() -> None:
-    set_seed(42)
     players = [
         TitForTat(),
         TitForTat(),
         AlwaysCooperate(),
         AlwaysDefect(),
-        RandomDefect(p=0.5, rng=create_rng("rd")),
-        RandomDefectTft(p=0.05, rng=create_rng("noisy-tft")),
+        RandomDefect(p=0.5, rng=random.Random("rd")),
+        RandomDefectTft(p=0.05, rng=random.Random("noisy-tft")),
     ]
     game = Game(
         deal_generator=ClassicAxelrodGenerator(),
         players=players,
         total_rounds=200,
+        rng=random.Random(42),
     )
     game.play()
 

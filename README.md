@@ -8,7 +8,6 @@ and strategies.
 
 ```
 src/pd/
-  rng.py                 global reproducible RNG (set_seed / global_rng / create_rng)
   deal.py                Deal, Action, DealPayoff (8-number asymmetric matrix)
   deal_generator.py      DealGenerator (abstract base only)
   deal_generators/       concrete DealGenerator implementations
@@ -16,7 +15,7 @@ src/pd/
   player.py              Player (abstract base only)
   players/               concrete Player implementations
     always_cooperate.py    AlwaysCooperate
-  game.py                Game: turn-based tournament orchestrator
+  game.py                Game: turn-based tournament orchestrator (owns rng)
 tests/                   pytest smoke tests (Python 3.12+)
 examples/                runnable examples
 ```
@@ -37,9 +36,11 @@ package `__init__.py`.
   reputation" are just strategies that ignore the opponent's history.
 - **Turn-based rounds.** In each of `total_rounds` rounds, every unordered
   pair of distinct players plays exactly one deal; pair order is shuffled
-  per round via the global RNG. Players never play themselves.
-- **Reproducibility.** All randomness must go through `get_rng()`. Call
-  `set_seed(seed)` once at the start of a run.
+  per round via `Game.rng`. Players never play themselves.
+- **Reproducibility.** `Game` is constructed with an explicit
+  `random.Random(seed)` and exposes it as `self.rng`. Players that need
+  their own random stream take a separate `random.Random(...)` in their
+  constructor. There is no global RNG state.
 - **History as raw Python.** `Game.history` is a `list[Deal]`; each `Deal`
   keeps players, payoff, actions, scores, and round index. Convert to a
   DataFrame later if needed.

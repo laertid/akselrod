@@ -5,18 +5,18 @@ per-pair, but its total across the field is competitive because it never
 loses badly.
 """
 
+import random
+
 from pd import (
     AlwaysCooperate,
     AlwaysDefect,
     ClassicAxelrodGenerator,
     Game,
     TitForTat,
-    set_seed,
 )
 
 
 def main() -> None:
-    set_seed(42)
     players = [
         TitForTat(),
         AlwaysCooperate(),
@@ -27,6 +27,7 @@ def main() -> None:
         deal_generator=ClassicAxelrodGenerator(),
         players=players,
         total_rounds=100,
+        rng=random.Random(42),
     )
     game.play()
 

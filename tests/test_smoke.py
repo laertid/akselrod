@@ -1,5 +1,7 @@
 """Smoke tests for the framework skeleton."""
 
+import random
+
 import pytest
 
 from pd import (
@@ -10,10 +12,11 @@ from pd import (
     DealPayoff,
     Game,
     Player,
-    create_rng,
-    global_rng,
-    set_seed,
 )
+
+
+def _rng(seed: int = 0) -> random.Random:
+    return random.Random(seed)
 
 
 def test_payoff_resolve():
@@ -28,7 +31,7 @@ def test_classic_generator_matrix():
     gen = ClassicAxelrodGenerator()
     a = AlwaysCooperate()
     b = AlwaysCooperate()
-    Game(gen, [a, b], total_rounds=1)  # binds ids
+    Game(gen, [a, b], total_rounds=1, rng=_rng())  # binds ids
     deal = gen.generate(a, b, round_index=0)
     assert deal.payoff.payoff_cc_1 == 3
     assert deal.payoff.payoff_dc_1 == 5
@@ -42,9 +45,8 @@ def test_classic_generator_rejects_invalid_matrix():
 
 
 def test_all_cooperate_game():
-    set_seed(42)
     players = [AlwaysCooperate() for _ in range(4)]
-    game = Game(ClassicAxelrodGenerator(), players, total_rounds=10)
+    game = Game(ClassicAxelrodGenerator(), players, total_rounds=10, rng=_rng(42))
     game.play()
 
     # 4 players, C(4,2)=6 pairs per round, 10 rounds = 60 deals
@@ -62,7 +64,7 @@ def test_all_cooperate_game():
 
 def test_player_ids_are_assigned():
     players = [AlwaysCooperate(), AlwaysCooperate(), AlwaysCooperate()]
-    Game(ClassicAxelrodGenerator(), players, total_rounds=1)
+    Game(ClassicAxelrodGenerator(), players, total_rounds=1, rng=_rng())
     ids = [p.player_id for p in players]
     assert ids == [0, 1, 2]
 
@@ -70,35 +72,32 @@ def test_player_ids_are_assigned():
 def test_player_cannot_bind_twice():
     p = AlwaysCooperate()
     q = AlwaysCooperate()
-    Game(ClassicAxelrodGenerator(), [p, q], total_rounds=1)
+    Game(ClassicAxelrodGenerator(), [p, q], total_rounds=1, rng=_rng())
     with pytest.raises(RuntimeError):
-        Game(ClassicAxelrodGenerator(), [p, q], total_rounds=1)
+        Game(ClassicAxelrodGenerator(), [p, q], total_rounds=1, rng=_rng())
 
 
 def test_players_do_not_play_themselves():
-    set_seed(0)
     players = [AlwaysCooperate() for _ in range(3)]
-    game = Game(ClassicAxelrodGenerator(), players, total_rounds=5)
+    game = Game(ClassicAxelrodGenerator(), players, total_rounds=5, rng=_rng())
     game.play()
     for deal in game.history:
         assert deal.player_1 is not deal.player_2
 
 
 def test_history_with_opponent():
-    set_seed(0)
     a, b, c = AlwaysCooperate(), AlwaysCooperate(), AlwaysCooperate()
-    game = Game(ClassicAxelrodGenerator(), [a, b, c], total_rounds=4)
+    game = Game(ClassicAxelrodGenerator(), [a, b, c], total_rounds=4, rng=_rng())
     game.play()
     assert len(a.history_with(b)) == 4
     assert len(a.history_with(c)) == 4
-    # Sanity: a's history_with(b) is a subset of a.history
     for d in a.history_with(b):
         assert d in a.history
 
 
 def test_deal_executes_only_once():
     a, b = AlwaysCooperate(), AlwaysCooperate()
-    Game(ClassicAxelrodGenerator(), [a, b], total_rounds=1)
+    Game(ClassicAxelrodGenerator(), [a, b], total_rounds=1, rng=_rng())
     payoff = DealPayoff(3, 3, 0, 5, 5, 0, 1, 1)
     deal = Deal(player_1=a, player_2=b, payoff=payoff, round_index=0)
     deal.execute()
@@ -106,56 +105,47 @@ def test_deal_executes_only_once():
         deal.execute()
 
 
-def test_reproducibility_via_seed():
+def test_game_stores_rng_and_players_can_reach_it():
+    """Any bound player sees the same Game and the same rng instance."""
+    p = AlwaysCooperate()
+    q = AlwaysCooperate()
+    rng = _rng(7)
+    game = Game(ClassicAxelrodGenerator(), [p, q], total_rounds=1, rng=rng)
+    assert game.rng is rng
+    assert p.game is game
+    assert p.game.rng is rng
+    assert q.game.rng is rng
+
+
+def test_reproducibility_via_game_rng():
+    """A stochastic player that pulls from self.game.rng gives the same
+    sequence when both the shuffling rng and the game share a seed."""
+
     class Coinflip(Player):
         @staticmethod
         def name() -> str:
             return "Coinflip"
 
         def do_deal(self, opponent, payoff, self_is_player_1, round_index):
-            return Action.COOPERATE if global_rng().random() < 0.5 else Action.DEFECT
+            return (
+                Action.COOPERATE
+                if self.game.rng.random() < 0.5
+                else Action.DEFECT
+            )
 
     def run(seed):
-        set_seed(seed)
         players = [Coinflip() for _ in range(4)]
-        g = Game(ClassicAxelrodGenerator(), players, total_rounds=20)
+        g = Game(
+            ClassicAxelrodGenerator(),
+            players,
+            total_rounds=20,
+            rng=random.Random(seed),
+        )
         g.play()
         return [(d.action_1, d.action_2) for d in g.history]
 
     assert run(123) == run(123)
     assert run(123) != run(124)
-
-
-def test_create_rng_none_returns_global():
-    r = create_rng(None)
-    assert r is global_rng()
-
-
-def test_create_rng_with_seed_is_independent_and_reproducible():
-    r1 = create_rng("hello")
-    r2 = create_rng("hello")
-    # Fresh instances, not the global one.
-    assert r1 is not global_rng()
-    assert r1 is not r2
-    # Same seed -> same sequence.
-    seq1 = [r1.random() for _ in range(5)]
-    seq2 = [r2.random() for _ in range(5)]
-    assert seq1 == seq2
-    # Different seed -> different sequence.
-    r3 = create_rng("world")
-    seq3 = [r3.random() for _ in range(5)]
-    assert seq3 != seq1
-
-
-def test_create_rng_does_not_affect_global():
-    set_seed(42)
-    baseline = [global_rng().random() for _ in range(3)]
-    set_seed(42)
-    # Using create_rng in between must not touch the global stream.
-    local = create_rng("noise")
-    _ = [local.random() for _ in range(3)]
-    after = [global_rng().random() for _ in range(3)]
-    assert baseline == after
 
 
 def test_simultaneous_choice_no_peeking():
@@ -170,8 +160,6 @@ def test_simultaneous_choice_no_peeking():
             return "Peeker"
 
         def do_deal(self, opponent, payoff, self_is_player_1, round_index):
-            # At decision time, no deal from THIS round should be in the
-            # opponent's history yet.
             for d in opponent.history:
                 if d.round_index == round_index and (
                     d.player_1 is self or d.player_2 is self
@@ -179,7 +167,6 @@ def test_simultaneous_choice_no_peeking():
                     seen_current_deal_from_opponent.append(True)
             return Action.COOPERATE
 
-    set_seed(1)
     players = [Peeker(), Peeker()]
-    Game(ClassicAxelrodGenerator(), players, total_rounds=5).play()
+    Game(ClassicAxelrodGenerator(), players, total_rounds=5, rng=_rng()).play()
     assert seen_current_deal_from_opponent == []

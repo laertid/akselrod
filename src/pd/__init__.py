@@ -12,7 +12,6 @@ from pd.players import (
     TitForTat,
 )
 from pd.game import Game
-from pd.rng import create_rng, global_rng, set_seed
 
 __all__ = [
     "Deal",
@@ -27,7 +26,4 @@ __all__ = [
     "RandomDefectTft",
     "TitForTat",
     "Game",
-    "create_rng",
-    "global_rng",
-    "set_seed",
 ]

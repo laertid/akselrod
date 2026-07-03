@@ -1,24 +1,32 @@
 """Game: orchestrates a turn-based tournament between a set of players.
 
 Structure:
-  - The Game is constructed with a DealGenerator, a list of players, and a
-    total number of rounds.
+  - The Game is constructed with a DealGenerator, a list of players, a
+    total number of rounds, and a random.Random instance used for pair
+    shuffling. The rng is a required, explicit dependency -- pass
+    random.Random(seed) for reproducible runs or random.Random() for a
+    fresh nondeterministic one.
   - Each player is bound to the Game and assigned a unique player_id.
+    Bound players can read the game's rng via `self.game.rng`, letting
+    strategies that want it share the game-level stream. Strategies that
+    prefer an independent stream (e.g. RandomDefect) should hold their
+    own random.Random.
   - In each round, every unordered pair of distinct players plays exactly
     one deal (players do NOT play against themselves). The order of pairs
-    within a round is shuffled via the global RNG for fairness.
-  - All executed deals are kept in `Game.history` in the order they were played,
-    so downstream analysis (e.g. converting to a DataFrame) is straightforward.
+    within a round is shuffled via `self.rng` for fairness.
+  - All executed deals are kept in `Game.history` in the order they were
+    played, so downstream analysis (e.g. converting to a DataFrame) is
+    straightforward.
 """
 
 from __future__ import annotations
 
 import itertools
+import random
 
 from pd.deal import Deal
 from pd.deal_generator import DealGenerator
 from pd.player import Player
-from pd.rng import global_rng
 
 
 class Game:
@@ -29,6 +37,7 @@ class Game:
         deal_generator: DealGenerator,
         players: list[Player],
         total_rounds: int,
+        rng: random.Random,
     ) -> None:
         if total_rounds < 1:
             raise ValueError("total_rounds must be >= 1")
@@ -38,6 +47,7 @@ class Game:
         self.deal_generator = deal_generator
         self.players: list[Player] = list(players)
         self.total_rounds = total_rounds
+        self.rng = rng
 
         # Bind every player to this game with a stable unique id.
         for idx, player in enumerate(self.players):
@@ -50,14 +60,12 @@ class Game:
         """Run all rounds. After this returns, `self.history` and each
         player's history are populated."""
         pairs = list(itertools.combinations(self.players, 2))
-        rng = global_rng()
 
         for round_index in range(self.total_rounds):
-            round_pairs = pairs[:]
-            
             # Shuffle pair order each round so no pair has a systematic
             # first/last-mover advantage across the tournament.
-            # rng.shuffle(round_pairs)
+            round_pairs = pairs[:]
+            self.rng.shuffle(round_pairs)
 
             for p1, p2 in round_pairs:
                 deal = self.deal_generator.generate(p1, p2, round_index)
