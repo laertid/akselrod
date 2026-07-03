@@ -9,5 +9,6 @@ below.
 """
 
 from pd.players.always_cooperate import AlwaysCooperate
+from pd.players.tit_for_tat import TitForTat
 
-__all__ = ["AlwaysCooperate"]
+__all__ = ["AlwaysCooperate", "TitForTat"]
