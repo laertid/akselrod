@@ -4,7 +4,7 @@ from pd.deal import Deal, Action, DealPayoff
 from pd.deal_generator import DealGenerator, ClassicAxelrodGenerator
 from pd.player import Player, AlwaysCooperate
 from pd.game import Game
-from pd.rng import get_rng, set_seed
+from pd.rng import create_rng, global_rng, set_seed
 
 __all__ = [
     "Deal",
@@ -15,6 +15,7 @@ __all__ = [
     "Player",
     "AlwaysCooperate",
     "Game",
-    "get_rng",
+    "create_rng",
+    "global_rng",
     "set_seed",
 ]

@@ -10,7 +10,8 @@ from pd import (
     DealPayoff,
     Game,
     Player,
-    get_rng,
+    create_rng,
+    global_rng,
     set_seed,
 )
 
@@ -112,7 +113,7 @@ def test_reproducibility_via_seed():
             return "Coinflip"
 
         def do_deal(self, opponent, payoff, self_is_player_1, round_index):
-            return Action.COOPERATE if get_rng().random() < 0.5 else Action.DEFECT
+            return Action.COOPERATE if global_rng().random() < 0.5 else Action.DEFECT
 
     def run(seed):
         set_seed(seed)
@@ -123,6 +124,38 @@ def test_reproducibility_via_seed():
 
     assert run(123) == run(123)
     assert run(123) != run(124)
+
+
+def test_create_rng_none_returns_global():
+    r = create_rng(None)
+    assert r is global_rng()
+
+
+def test_create_rng_with_seed_is_independent_and_reproducible():
+    r1 = create_rng("hello")
+    r2 = create_rng("hello")
+    # Fresh instances, not the global one.
+    assert r1 is not global_rng()
+    assert r1 is not r2
+    # Same seed -> same sequence.
+    seq1 = [r1.random() for _ in range(5)]
+    seq2 = [r2.random() for _ in range(5)]
+    assert seq1 == seq2
+    # Different seed -> different sequence.
+    r3 = create_rng("world")
+    seq3 = [r3.random() for _ in range(5)]
+    assert seq3 != seq1
+
+
+def test_create_rng_does_not_affect_global():
+    set_seed(42)
+    baseline = [global_rng().random() for _ in range(3)]
+    set_seed(42)
+    # Using create_rng in between must not touch the global stream.
+    local = create_rng("noise")
+    _ = [local.random() for _ in range(3)]
+    after = [global_rng().random() for _ in range(3)]
+    assert baseline == after
 
 
 def test_simultaneous_choice_no_peeking():

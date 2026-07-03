@@ -18,7 +18,7 @@ import itertools
 from pd.deal import Deal
 from pd.deal_generator import DealGenerator
 from pd.player import Player
-from pd.rng import get_rng
+from pd.rng import global_rng
 
 
 class Game:
@@ -50,7 +50,7 @@ class Game:
         """Run all rounds. After this returns, `self.history` and each
         player's history are populated."""
         pairs = list(itertools.combinations(self.players, 2))
-        rng = get_rng()
+        rng = global_rng()
 
         for round_index in range(self.total_rounds):
             # Shuffle pair order each round so no pair has a systematic
