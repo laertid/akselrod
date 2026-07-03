@@ -7,3 +7,11 @@ venv/
 build/
 dist/
 .DS_Store
+
+# Notebook checkpoints (JupyterLab autosaves)
+.ipynb_checkpoints/
+
+# Local scratch space for ad-hoc experiments; never committed
+# (the directory itself is kept via junk/.gitkeep).
+junk/*
+!junk/.gitkeep

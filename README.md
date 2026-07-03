@@ -47,8 +47,44 @@ package `__init__.py`.
 ## Run
 
 ```bash
-cd prisoner_dilemma
+cd akselrod
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 pytest
 python examples/run_all_cooperate.py
 ```
+
+## Notebooks
+
+Experiments live in `notebooks/`. The template `experiment_template.ipynb`
+shows a full run: config -> game -> cumulative-score multiline chart ->
+dual-axis score-vs-cooperation chart -> pairwise heatmap.
+
+One-shot setup after cloning (inside an activated venv):
+
+```bash
+scripts/setup_dev.sh
+```
+
+This installs the package with dev extras (JupyterLab, matplotlib, numpy,
+nbstripout), registers a Jupyter kernel named `pd`, and installs the
+[`nbstripout`](https://github.com/kynan/nbstripout) git filter so notebook
+outputs are stripped from every commit automatically. `.gitattributes`
+already declares the filter, so once `setup_dev.sh` has run, diffs and
+commits stay clean.
+
+Start JupyterLab:
+
+```bash
+jupyter lab notebooks/experiment_template.ipynb
+```
+
+Edits in `src/pd/` are picked up live because the template loads
+`autoreload` — no kernel restart needed.
+
+### Scratch work
+
+The `junk/` directory is gitignored (except for the `.gitkeep` placeholder).
+Use it for throwaway notebooks, quick scripts, or one-off data dumps that
+shouldn't hit git.
