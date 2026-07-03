@@ -5,6 +5,7 @@ import pytest
 from pd import (
     Action,
     AlwaysCooperate,
+    AlwaysDefect,
     ClassicAxelrodGenerator,
     DealPayoff,
     Game,
@@ -15,15 +16,6 @@ from pd import (
 
 
 # ---- helper strategies used only in tests -----------------------------------
-
-
-class AlwaysDefect(Player):
-    @staticmethod
-    def name() -> str:
-        return "AlwaysDefect"
-
-    def do_deal(self, opponent, payoff, self_is_player_1, round_index):
-        return Action.DEFECT
 
 
 class Scripted(Player):
