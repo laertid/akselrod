@@ -16,6 +16,8 @@ src/pd/
   players/               concrete Player implementations
     always_cooperate.py    AlwaysCooperate
   game.py                Game: turn-based tournament orchestrator (owns rng)
+  collector.py           Collector: abstract post-game data-mining hook
+  multigame.py           Multigame: sequentially runs a 2D grid of games
 tests/                   pytest smoke tests (Python 3.12+)
 examples/                runnable examples
 ```
@@ -44,6 +46,12 @@ package `__init__.py`.
 - **History as raw Python.** `Game.history` is a `list[Deal]`; each `Deal`
   keeps players, payoff, actions, scores, and round index. Convert to a
   DataFrame later if needed.
+- **Batch experiments.** `Multigame` takes a
+  `list[list[tuple[Game, dict]]]` grid and a `Collector`, and iterates it
+  row-major (all sequential -- the 2D shape is only a grouping
+  convention for the caller / Collector). After each `game.play()` it
+  calls `collector.collect(game, context)`. Collectors are stateful;
+  `Multigame.run()` returns nothing.
 
 ## Run
 
