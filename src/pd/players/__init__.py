@@ -9,6 +9,15 @@ below.
 """
 
 from pd.players.always_cooperate import AlwaysCooperate
+from pd.players.always_defect import AlwaysDefect
+from pd.players.random_defect import RandomDefect
+from pd.players.random_defect_tft import RandomDefectTft
 from pd.players.tit_for_tat import TitForTat
 
-__all__ = ["AlwaysCooperate", "TitForTat"]
+__all__ = [
+    "AlwaysCooperate",
+    "AlwaysDefect",
+    "RandomDefect",
+    "RandomDefectTft",
+    "TitForTat",
+]
