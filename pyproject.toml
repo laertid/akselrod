@@ -2,7 +2,7 @@
 name = "pd"
 version = "0.1.0"
 description = "Reproducible iterated prisoner's dilemma tournaments."
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 
 [build-system]
 requires = ["setuptools>=68"]

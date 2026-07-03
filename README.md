@@ -13,7 +13,7 @@ src/pd/
   deal_generator.py   DealGenerator (abstract) + ClassicAxelrodGenerator
   player.py           Player (abstract) + AlwaysCooperate
   game.py             Game: turn-based tournament orchestrator
-tests/                pytest smoke tests
+tests/                pytest smoke tests (Python 3.12+)
 examples/             runnable examples
 ```
 
