@@ -12,6 +12,8 @@ from pd.players import (
     TitForTat,
 )
 from pd.game import Game
+from pd.collector import Collector
+from pd.multigame import Multigame
 
 __all__ = [
     "Deal",
@@ -26,4 +28,6 @@ __all__ = [
     "RandomDefectTft",
     "TitForTat",
     "Game",
+    "Collector",
+    "Multigame",
 ]
