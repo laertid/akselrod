@@ -82,23 +82,27 @@ class Deal:
     def execute(self) -> None:
         """Ask both players for their actions simultaneously, then score.
 
-        "Simultaneously" here means: neither player's `do_deal` sees the
+        "Simultaneously" here means: neither player's `decide` sees the
         other's decision for this deal. We collect both choices first, only
         then compute scores and append to histories.
+
+        Both players are consulted via `Player.decide`, not `Player.do_deal`
+        directly, so the base-class chaos coin (`Player.chaos`) is applied
+        transparently before the subclass strategy runs.
         """
         if self.executed:
             raise RuntimeError("Deal already executed")
 
         # Collect both decisions before revealing anything.
         # Each player sees only its own perspective of the deal (opponent ref,
-        # payoff from its own point of view, round index) -- see Player.do_deal.
-        a1 = self.player_1.do_deal(
+        # payoff from its own point of view, round index) -- see Player.decide.
+        a1 = self.player_1.decide(
             opponent=self.player_2,
             payoff=self.payoff,
             self_is_player_1=True,
             round_index=self.round_index,
         )
-        a2 = self.player_2.do_deal(
+        a2 = self.player_2.decide(
             opponent=self.player_1,
             payoff=self.payoff,
             self_is_player_1=False,
@@ -106,7 +110,7 @@ class Deal:
         )
 
         if not isinstance(a1, Action) or not isinstance(a2, Action):
-            raise TypeError("do_deal must return an Action")
+            raise TypeError("Player.decide must return an Action")
 
         s1, s2 = self.payoff.resolve(a1, a2)
 
