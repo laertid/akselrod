@@ -234,3 +234,66 @@ def test_run_parallel_propagates_worker_exception():
 
     with pytest.raises(RuntimeError, match="boom"):
         Multigame(grid, RaisingCollector()).run_parallel(max_workers=2)
+
+
+def test_run_parallel_wraps_worker_traceback_with_context():
+    """When a worker raises, the parent should see a RuntimeError whose
+    message includes the offending context and the original exception's
+    class name and traceback -- not a bare BrokenProcessPool.
+    """
+    grid = [
+        [
+            (_make_game([AlwaysCooperate, AlwaysDefect], 2, seed=1), {"i": 3, "j": 7, "boom": True}),
+        ]
+    ]
+
+    with pytest.raises(RuntimeError) as exc_info:
+        Multigame(grid, RaisingCollector()).run_parallel(max_workers=1)
+
+    msg = str(exc_info.value)
+    assert "worker crashed" in msg
+    assert "'i': 3" in msg and "'j': 7" in msg
+    assert "RuntimeError" in msg  # original exception class
+    assert "boom" in msg  # original message
+
+
+# ---------------------------------------------------------------------------
+# run_parallel: mp_context and max_workers=1 fallback
+# ---------------------------------------------------------------------------
+
+
+def test_run_parallel_with_spawn_context():
+    """Explicit mp_context='spawn' should work on all platforms and
+    produce the same results as the default context.
+    """
+    grid = [
+        [
+            (_make_game([AlwaysCooperate, AlwaysDefect], 3, seed=1), {"i": 0, "j": 0}),
+            (_make_game([TitForTat, AlwaysDefect], 3, seed=2), {"i": 0, "j": 1}),
+        ],
+    ]
+
+    collector = RowsCollector()
+    Multigame(grid, collector).run_parallel(max_workers=2, mp_context="spawn")
+
+    keys = {(r["i"], r["j"]) for r in collector.rows}
+    assert keys == {(0, 0), (0, 1)}
+
+
+def test_run_parallel_single_worker():
+    """max_workers=1 is the debugging fallback -- it should still work
+    and produce the full result set.
+    """
+    grid = [
+        [
+            (_make_game([AlwaysCooperate, AlwaysDefect], 3, seed=1), {"i": 0, "j": 0}),
+            (_make_game([TitForTat, AlwaysDefect], 3, seed=2), {"i": 0, "j": 1}),
+            (_make_game([AlwaysCooperate, AlwaysCooperate], 3, seed=3), {"i": 0, "j": 2}),
+        ],
+    ]
+
+    collector = RowsCollector()
+    Multigame(grid, collector).run_parallel(max_workers=1)
+
+    keys = {(r["i"], r["j"]) for r in collector.rows}
+    assert keys == {(0, 0), (0, 1), (0, 2)}

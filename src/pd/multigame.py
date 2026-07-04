@@ -24,6 +24,8 @@ return nothing.
 
 from __future__ import annotations
 
+import multiprocessing as mp
+import traceback
 from concurrent.futures import ProcessPoolExecutor
 from typing import Type
 
@@ -41,11 +43,22 @@ def _run_one_game(
     Runs inside a worker process. Must be at module scope so it can be
     pickled. Instantiates `collector_cls()` with no arguments -- concrete
     collectors used with `run_parallel` must therefore support this.
+
+    If anything raises, wrap the traceback in a RuntimeError so it survives
+    the pickle round-trip back to the parent -- otherwise the parent sees
+    only `BrokenProcessPool` with no clue what actually went wrong.
     """
-    local = collector_cls()
-    game.play()
-    local.collect(game, context)
-    return local
+    try:
+        local = collector_cls()
+        game.play()
+        local.collect(game, context)
+        return local
+    except BaseException as exc:
+        tb = traceback.format_exc()
+        raise RuntimeError(
+            f"worker crashed playing game with context={context}: "
+            f"{type(exc).__name__}: {exc}\n{tb}"
+        ) from exc
 
 
 class Multigame:
@@ -84,7 +97,11 @@ class Multigame:
                 game.play()
                 self.collector.collect(game, context)
 
-    def run_parallel(self, max_workers: int | None = None) -> None:
+    def run_parallel(
+        self,
+        max_workers: int | None = None,
+        mp_context: str | None = None,
+    ) -> None:
         """Play every game across a process pool and merge the results.
 
         Each cell in the grid is submitted as an independent task: a
@@ -102,6 +119,21 @@ class Multigame:
           - It must override `Collector.merge` to combine two instances;
             the default raises `NotImplementedError`.
 
+        Args:
+            max_workers: forwarded to `ProcessPoolExecutor`. `None` uses
+                `os.cpu_count()`. Pass `1` to run all games in a single
+                worker process -- handy on Windows/Jupyter to surface
+                real worker tracebacks instead of `BrokenProcessPool`.
+            mp_context: name of the multiprocessing start method to use
+                (`"spawn"`, `"fork"`, or `"forkserver"`). Default `None`
+                = platform default (spawn on Windows/macOS, fork on Linux).
+                On Windows/Jupyter, if the default pool dies with
+                `BrokenProcessPool` at submit time, try `"spawn"`
+                explicitly; if that also fails, the traceback surfaced
+                by `max_workers=1` will point at the real cause
+                (usually a non-picklable object captured from the
+                notebook, e.g. via `%autoreload`).
+
         Results ordering: worker collectors are merged in the order tasks
         complete, not row-major. If the caller cares about ordering, it
         must be reconstructed from data the collector already stores
@@ -114,7 +146,11 @@ class Multigame:
         if not cells:
             return
         collector_cls = type(self.collector)
-        with ProcessPoolExecutor(max_workers=max_workers) as pool:
+        ctx = mp.get_context(mp_context) if mp_context else None
+        with ProcessPoolExecutor(
+            max_workers=max_workers,
+            mp_context=ctx,
+        ) as pool:
             futures = [
                 pool.submit(_run_one_game, game, context, collector_cls)
                 for game, context in cells
