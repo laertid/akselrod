@@ -33,3 +33,23 @@ class Collector(ABC):
         only read from them and write to their own state.
         """
         raise NotImplementedError
+
+    def merge(self, other: "Collector") -> None:
+        """Merge another collector's state into this one.
+
+        Used by `Multigame.run_parallel(...)`: each worker process
+        instantiates a fresh collector of the same class, calls
+        `collect(...)` on the games it played, and sends the resulting
+        object back to the parent, where the parent's collector merges
+        each worker collector via this method.
+
+        The default raises `NotImplementedError`; concrete collectors
+        that want to be usable with `run_parallel` must override.
+        Sequential `Multigame.run()` never calls `merge`, so collectors
+        that only run sequentially can leave it unimplemented.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement merge(); it cannot be "
+            "used with Multigame.run_parallel. Override Collector.merge to "
+            "combine two instances of this collector."
+        )

@@ -52,6 +52,15 @@ package `__init__.py`.
   convention for the caller / Collector). After each `game.play()` it
   calls `collector.collect(game, context)`. Collectors are stateful;
   `Multigame.run()` returns nothing.
+- **Parallel execution.** `Multigame.run_parallel(max_workers=None)`
+  runs the same grid across a `ProcessPoolExecutor`. Each worker plays
+  one game with a fresh instance of the collector class, and the parent
+  merges the workers back via `Collector.merge(other)`. Concrete
+  collectors opt in by overriding `merge` (the default raises
+  `NotImplementedError`) and by supporting a no-arg constructor.
+  Collector call order is not row-major in this mode -- if you need
+  ordering, reconstruct it from data stored in the collector rows
+  (e.g. `i` / `j` in the context).
 
 ## Run
 
