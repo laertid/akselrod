@@ -13,6 +13,7 @@ from pd.players import (
 )
 from pd.game import Game
 from pd.collector import Collector
+from pd.collectors import ScoreStatsCollector, GameStats
 from pd.multigame import Multigame
 
 __all__ = [
@@ -30,5 +31,7 @@ __all__ = [
     "TitForTat",
     "Game",
     "Collector",
+    "ScoreStatsCollector",
+    "GameStats",
     "Multigame",
 ]
