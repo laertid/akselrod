@@ -11,7 +11,8 @@ src/pd/
   deal.py                Deal, Action, DealPayoff (8-number asymmetric matrix)
   deal_generator.py      DealGenerator (abstract base only)
   deal_generators/       concrete DealGenerator implementations
-    classic_axelrod.py     ClassicAxelrodGenerator
+    classic_axelrod.py     ClassicAxelrodGenerator (T=5, R=3, P=1, S=0 default)
+    static.py              StaticGenerator (arbitrary caller-supplied DealPayoff)
   player.py              Player (abstract base only)
   players/               concrete Player implementations
     always_cooperate.py    AlwaysCooperate
