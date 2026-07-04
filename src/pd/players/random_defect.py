@@ -16,8 +16,14 @@ from pd.player import Player
 class RandomDefect(Player):
     """Defect with probability `p`, cooperate with probability `1 - p`."""
 
-    def __init__(self, p: float, rng: random.Random) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        p: float,
+        rng: random.Random,
+        chaos: float = 0.0,
+        chaos_rng: random.Random | None = None,
+    ) -> None:
+        super().__init__(chaos=chaos, chaos_rng=chaos_rng)
         if not 0.0 <= p <= 1.0:
             raise ValueError(f"p must be in [0, 1], got {p}")
         self.p = p
