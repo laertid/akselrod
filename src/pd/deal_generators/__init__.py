@@ -9,5 +9,6 @@ below.
 """
 
 from pd.deal_generators.classic_axelrod import ClassicAxelrodGenerator
+from pd.deal_generators.static import StaticGenerator
 
-__all__ = ["ClassicAxelrodGenerator"]
+__all__ = ["ClassicAxelrodGenerator", "StaticGenerator"]
